@@ -51,5 +51,5 @@ jobs:
     # Actualizar Lambda 2 con el nuevo archivo ZIP
     - name: Update Lambda 2
       run: |
-        aws lambda update-function-code --function-name TestSnowflakeInsert --s3-bucket davidgemio-pythoncodetest --s3-key extract-data-code/function1.zip
+        aws lambda update-function-code --function-name TestSnowflakeInsert --s3-bucket davidgemio-pythoncodetest --s3-key insert-data-sf/function2.zip
 
