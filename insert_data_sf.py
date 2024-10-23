@@ -62,37 +62,42 @@ def lambda_handler(event, context):
     status_return_code = 200
     reponse_message = 'Successful'
 
-    try:
-        logger.info("Attempting to connect to Snowflake")
-
-        conn = snowflake.connector.connect(**credentials)
-
-        logger.info("connection established")
-        cur = conn.cursor()
-
-        logger.info('inserting data')
-
-        cur.execute_async("""
-                INSERT INTO TEST
-                SELECT
-                    %(Name)s, %(Description)s, %(State Change)s, %(Threshold crossed)s, %(Threshold)s, %(Timestamp)s,
-                    %(AWS Account)s, %(Alarm Arn)s, %(Aws region)s, %(MetricNamespace)s, %(MetricName)s, %(dimension_name)s,
-                    %(dimension_value)s, %(Tool)s, PARSE_JSON(%(raw)s)
-            """, {**event, 'raw': json.dumps(event)})
-        logger.info("Data inserted successfully")
+    return {
+        'statusCode': status_return_code,
+        'body': reponse_message
+    }
 
 
-    except Exception as e:
-        logger.error(f'Unexpected error: {e}')
-        conn.rollback()
-        status_return_code = 400
-        reponse_message = e
-
-    finally:
-        cur.close()
-        conn.close()
-        logger.info("connection closed")
-        return {
-            'statusCode': status_return_code,
-            'body': reponse_message
-        }
+    # try:
+    #     logger.info("Attempting to connect to Snowflake")
+    #
+    #     conn = snowflake.connector.connect(**credentials)
+    #
+    #     logger.info("connection established")
+    #     cur = conn.cursor()
+    #
+    #     logger.info('inserting data')
+    #
+    #     cur.execute_async("""
+    #             INSERT INTO TEST
+    #             SELECT
+    #                 %(Name)s, %(Description)s, %(State Change)s, %(Threshold crossed)s, %(Threshold)s, %(Timestamp)s,
+    #                 %(AWS Account)s, %(Alarm Arn)s, %(Aws region)s, %(MetricNamespace)s, %(MetricName)s, %(dimension_name)s,
+    #                 %(dimension_value)s, %(Tool)s, PARSE_JSON(%(raw)s)
+    #         """, {**event, 'raw': json.dumps(event)})
+    #     logger.info("Data inserted successfully")
+    #
+    #
+    # except Exception as e:
+    #     logger.error(f'Unexpected error: {e}')
+    #     conn.rollback()
+    #     status_return_code = 400
+    #     reponse_message = e
+    #
+    # finally:
+    #     cur.close()
+    #     conn.close()
+    #     logger.info("connection closed")
+    #     return {
+    #         'statusCode': status_return_code,
+    #         'body': reponse_message
