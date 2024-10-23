@@ -1,0 +1,65 @@
+name: Deploy Lambda Functions with S3
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+
+    # Paso para generar el zip para Lambda 1
+    - name: Create ZIP for Lambda 1
+      run: |
+        zip -j function1.zip get_data.py
+    
+    # Paso para generar el zip para Lambda 2
+    - name: Create ZIP for Lambda 2
+      run: |
+        zip -j function2.zip insert_data_sf.py
+
+    # Subir el archivo ZIP para Lambda 1 a S3
+    - name: Upload Lambda 1 to S3
+      run: |
+        aws s3 cp function1.zip s3://davidgemio-pythoncodetest/extract-data-code/function1.zip
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: us-east-1
+
+    # Subir el archivo ZIP para Lambda 2 a S3
+    - name: Upload Lambda 2 to S3
+      run: |
+        aws s3 cp function2.zip s3://davidgemio-pythoncodetest/insert-data-sf/function2.zip
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: us-east-1
+
+    # Actualizar Lambda 1 con el nuevo archivo ZIP
+    - name: Update Lambda 1
+      run: |
+        aws lambda update-function-code --function-name TestSQSLambda --s3-bucket davidgemio-pythoncodetest --s3-key extract-data-code/function1.zip
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: us-east-1
+
+    # Actualizar Lambda 2 con el nuevo archivo ZIP
+    - name: Update Lambda 2
+      run: |
+        aws lambda update-function-code --function-name TestSnowflakeInsert --s3-bucket davidgemio-pythoncodetest --s3-key insert-data-sf/function2.zip
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: us-east-1
