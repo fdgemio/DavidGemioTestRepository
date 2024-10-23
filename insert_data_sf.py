@@ -7,8 +7,8 @@ from botocore.exceptions import ClientError
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-def get_secret() -> dict:
 
+def get_secret() -> dict:
     secret_name = "dev/journal_events/SF_cred"
     region_name = "us-east-1"
     # Create a Secrets Manager client
@@ -31,8 +31,8 @@ def get_secret() -> dict:
 
     # Your code goes here.
 
-def lambda_handler(event, context):
 
+def lambda_handler(event, context):
     reason = event.get('Reason for State Change')
     dimensions = event.get('Dimensions').split('=')
 
@@ -40,8 +40,8 @@ def lambda_handler(event, context):
         'State Change': event.get('State Change', '').split('>')[1].strip(),
         'Aws region': event.get('Alarm Arn', '').split(':')[3],
         'Tool': event.get('MetricNamespace').split('/')[-1],
-        'Threshold crossed': reason[reason.index('[')+1:reason.index(' (')],
-        'Threshold': reason[reason.rindex('(')+1:reason.rindex(')')],
+        'Threshold crossed': reason[reason.index('[') + 1:reason.index(' (')],
+        'Threshold': reason[reason.rindex('(') + 1:reason.rindex(')')],
         'dimension_name': dimensions[0][1:].strip(),
         'dimension_value': dimensions[1][:-1].strip(),
     })
@@ -58,46 +58,40 @@ def lambda_handler(event, context):
             'body': json.dumps(str(e))
         }
 
-
     status_return_code = 200
     reponse_message = 'Successful'
 
-    return {
-        'statusCode': status_return_code,
-        'body': reponse_message
-    }
+    try:
+        logger.info("Attempting to connect to Snowflake")
+
+        conn = snowflake.connector.connect(**credentials)
+
+        logger.info("connection established")
+        cur = conn.cursor()
+
+        logger.info('inserting data')
+
+        cur.execute_async("""
+                INSERT INTO TEST
+                SELECT
+                    %(Name)s, %(Description)s, %(State Change)s, %(Threshold crossed)s, %(Threshold)s, %(Timestamp)s,
+                    %(AWS Account)s, %(Alarm Arn)s, %(Aws region)s, %(MetricNamespace)s, %(MetricName)s, %(dimension_name)s,
+                    %(dimension_value)s, %(Tool)s, PARSE_JSON(%(raw)s)
+            """, {**event, 'raw': json.dumps(event)})
+        logger.info("Data inserted successfully")
 
 
-    # try:
-    #     logger.info("Attempting to connect to Snowflake")
-    #
-    #     conn = snowflake.connector.connect(**credentials)
-    #
-    #     logger.info("connection established")
-    #     cur = conn.cursor()
-    #
-    #     logger.info('inserting data')
-    #
-    #     cur.execute_async("""
-    #             INSERT INTO TEST
-    #             SELECT
-    #                 %(Name)s, %(Description)s, %(State Change)s, %(Threshold crossed)s, %(Threshold)s, %(Timestamp)s,
-    #                 %(AWS Account)s, %(Alarm Arn)s, %(Aws region)s, %(MetricNamespace)s, %(MetricName)s, %(dimension_name)s,
-    #                 %(dimension_value)s, %(Tool)s, PARSE_JSON(%(raw)s)
-    #         """, {**event, 'raw': json.dumps(event)})
-    #     logger.info("Data inserted successfully")
-    #
-    #
-    # except Exception as e:
-    #     logger.error(f'Unexpected error: {e}')
-    #     conn.rollback()
-    #     status_return_code = 400
-    #     reponse_message = e
-    #
-    # finally:
-    #     cur.close()
-    #     conn.close()
-    #     logger.info("connection closed")
-    #     return {
-    #         'statusCode': status_return_code,
-    #         'body': reponse_message
+    except Exception as e:
+        logger.error(f'Unexpected error: {e}')
+        conn.rollback()
+        status_return_code = 400
+        reponse_message = e
+
+    finally:
+        cur.close()
+        conn.close()
+        logger.info("connection closed")
+        return {
+            'statusCode': status_return_code,
+            'body': reponse_message
+        }
