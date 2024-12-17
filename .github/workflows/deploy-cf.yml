@@ -42,7 +42,7 @@ jobs:
             --capabilities CAPABILITY_NAMED_IAM
 
 
-      # Retrieve the S3 Bucket name from CloudFormation Output.
+      # Retrieve the S3 Bucket name from CloudFormation Output and set as output
       - name: Get S3 Bucket Name
         id: get_bucket_name
         run: |
@@ -52,6 +52,7 @@ jobs:
             --output text)
           echo "BUCKET_NAME=$BUCKET_NAME"
           echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
+          echo "::set-output name=BUCKET_NAME::$BUCKET_NAME"  # Set the output
 
   upload_lambda_files:
     name: Upload Lambda Files to S3
