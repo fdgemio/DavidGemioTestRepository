@@ -47,7 +47,7 @@ jobs:
       run: |
         BUCKET_NAME=$(aws cloudformation describe-stacks \
           --stack-name my-cloudformation-stack \
-          --query "Stacks[0].Outputs[?OutputKey=='JournalEventBucketName'].OutputValue" \
+          --query "Stacks[0].Outputs[?OutputKey=='JournalEventBucket'].OutputValue" \
           --output text)
         echo "BUCKET_NAME=$BUCKET_NAME"
         echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
