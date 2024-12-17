@@ -41,7 +41,7 @@ jobs:
             --stack-name davidgp-journal-event-s3 \
             --capabilities CAPABILITY_NAMED_IAM
 
-      # Retrieve the S3 Bucket name from CloudFormation Output and set it as an output
+      # Retrieve the S3 Bucket name from CloudFormation Output and set it as a job output
       - name: Get S3 Bucket Name
         id: get_bucket_name
         run: |
@@ -52,8 +52,6 @@ jobs:
           echo "BUCKET_NAME=$BUCKET_NAME"
           echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
         # Set output so other jobs can use it
-        outputs:
-          bucket_name: ${{ steps.get_bucket_name.outputs.BUCKET_NAME }}
 
   upload_lambda_files:
     name: Upload Lambda Files to S3
