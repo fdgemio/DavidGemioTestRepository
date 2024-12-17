@@ -44,7 +44,6 @@ def lambda_handler(event, context):
             })
 
             client = boto3.client('lambda')
-
             client.invoke(FunctionName='TestSnowflakeInsert', InvocationType='Event', Payload=json.dumps(res, indent=2))
 
         return {
