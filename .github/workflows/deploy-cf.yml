@@ -86,6 +86,7 @@ jobs:
             --query "Stacks[0].Outputs[?OutputKey=='JournalEventBucketName'].OutputValue" \
             --output text)
           echo "BUCKET_NAME=$BUCKET_NAME"
+          echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
 
       # Upload ZIP file for Lambda 1 to the S3 bucket
       - name: Upload Lambda 1 to S3
@@ -95,7 +96,7 @@ jobs:
       # Upload ZIP file for Lambda 2 to the S3 bucket
       - name: Upload Lambda 2 to S3
         run: |
-                  aws s3 cp function2.zip s3://${{ env.BUCKET_NAME }}/connector-sf-lambda-code-bucket/function2.zip
+          aws s3 cp function2.zip s3://${{ env.BUCKET_NAME }}/connector-sf-lambda-code-bucket/function2.zip
 
   create_lambdas:
     name: Create Lambdas Functions
