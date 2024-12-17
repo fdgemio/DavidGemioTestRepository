@@ -86,7 +86,6 @@ jobs:
             --query "Stacks[0].Outputs[?OutputKey=='JournalEventBucketName'].OutputValue" \
             --output text)
           echo "BUCKET_NAME=$BUCKET_NAME"
-          echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
 
       # Upload ZIP file for Lambda 1 to the S3 bucket
       - name: Upload Lambda 1 to S3
@@ -109,3 +108,68 @@ jobs:
       AWS_REGION: ${{ secrets.AWS_REGION }}
 
     steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Configure AWS CLI with credentials
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # Validate the CloudFormation template
+      - name: Validate CloudFormation Template
+        run: |
+          aws cloudformation validate-template --template-body file://templates-cf/lambdas_codes_template.yaml
+
+      # Deploy/Update the CloudFormation Stack
+      - name: Deploy CloudFormation Stack
+        run: |
+          aws cloudformation deploy \
+            --template-file templates-cf/lambdas_codes_template.yaml \
+            --stack-name davidgp-journal-event-s3 \
+            --capabilities CAPABILITY_NAMED_IAM
+
+      # Obtener el nombre del bucket S3 del stack desplegado
+      - name: Get S3 Bucket Name
+        id: get_bucket_name
+        run: |
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name davidgp-journal-event-s3 \
+            --query "Stacks[0].Outputs[?OutputKey=='JournalEventBucketName'].OutputValue" \
+            --output text)
+          echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
+
+      # Obtener las claves S3 y nombres de función de los Lambdas desde el template
+      - name: Extract Lambda Configuration
+        id: extract_lambda_config
+        run: |
+          FUNCTION1_NAME="InterceptorSNSFunction"
+          FUNCTION1_KEY="interceptor-lambda-code-bucket/function1.zip"
+
+          FUNCTION2_NAME="ConnectorSF"
+          FUNCTION2_KEY="connector-sf-lambda-code-bucket/function2.zip"
+
+          echo "FUNCTION1_NAME=$FUNCTION1_NAME" >> $GITHUB_ENV
+          echo "FUNCTION1_KEY=$FUNCTION1_KEY" >> $GITHUB_ENV
+          echo "FUNCTION2_NAME=$FUNCTION2_NAME" >> $GITHUB_ENV
+          echo "FUNCTION2_KEY=$FUNCTION2_KEY" >> $GITHUB_ENV
+
+      # Actualizar Lambda 1 usando los valores parametrizados
+      - name: Update Lambda 1
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ env.FUNCTION1_NAME }} \
+            --s3-bucket ${{ env.BUCKET_NAME }} \
+            --s3-key ${{ env.FUNCTION1_KEY }}
+
+      # Actualizar Lambda 2 usando los valores parametrizados
+      - name: Update Lambda 2
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ env.FUNCTION2_NAME }} \
+            --s3-bucket ${{ env.BUCKET_NAME }} \
+            --s3-key ${{ env.FUNCTION2_KEY }}
