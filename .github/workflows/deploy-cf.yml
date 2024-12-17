@@ -49,8 +49,12 @@ jobs:
           --stack-name my-cloudformation-stack \
           --query "Stacks[0].Outputs[?OutputKey=='JournalEventBucketName'].OutputValue" \
           --output text)
-        echo "Bucket Name: $BUCKET_NAME"
+        echo "BUCKET_NAME=$BUCKET_NAME"
         echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
+
+    - name: Debug Bucket Name
+      run: |
+        echo "Bucket Name is: ${{ env.BUCKET_NAME }}"
 
     - name: Create ZIP for Lambda 1
       run: |
