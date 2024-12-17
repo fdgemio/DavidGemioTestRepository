@@ -1,11 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Stack to create Lambda functions
 
-Parameters:
-  CodeBucketName:
-    Type: String
-    Description: Name of the S3 bucket with Lambda code
-
 Resources:
   InterceptorSNSLambdaFunction:
     Type: AWS::Lambda::Function
