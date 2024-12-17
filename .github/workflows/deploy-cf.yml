@@ -1,70 +1,89 @@
-name: Deploy CloudFormation Stack
+name: Deploy CloudFormation Stack and Upload Lambda Files
 
 on:
   push:
     branches:
-      - main  # Trigger deployment on push to main branch
+      - main  # Trigger deployment on push to the main branch
 
 jobs:
-  deploy:
-    name: Deploy to AWS CloudFormation
+  deploy_stack:
+    name: Deploy CloudFormation Stack
     runs-on: ubuntu-latest
 
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+
     steps:
-    # Checkout the repository
-    - name: Checkout code
-      uses: actions/checkout@v3
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # Configure AWS CLI with credentials
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v3
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
+      # Configure AWS CLI with credentials
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-    # Validate the CloudFormation template
-    - name: Validate CloudFormation Template
-      run: |
-        aws cloudformation validate-template --template-body file://templates-cf/s3_buckets_template.yaml
+      # Validate the CloudFormation template
+      - name: Validate CloudFormation Template
+        run: |
+          aws cloudformation validate-template --template-body file://templates-cf/s3_buckets_template.yaml
 
-    # Deploy/Update the CloudFormation Stack
-    - name: Deploy CloudFormation Stack
-      run: |
-        aws cloudformation deploy \
-          --template-file templates-cf/s3_buckets_template.yaml \
-          --stack-name davidgp-journal-event-s3 \
-          --capabilities CAPABILITY_NAMED_IAM
+      # Deploy/Update the CloudFormation Stack
+      - name: Deploy CloudFormation Stack
+        run: |
+          aws cloudformation deploy \
+            --template-file templates-cf/s3_buckets_template.yaml \
+            --stack-name davidgp-journal-event-s3 \
+            --capabilities CAPABILITY_NAMED_IAM
 
-    # Retrieve the S3 Bucket name from CloudFormation Outputs
-    - name: Get S3 Bucket Name
-      id: get_bucket_name
-      run: |
-        BUCKET_NAME=$(aws cloudformation describe-stacks \
-          --stack-name my-cloudformation-stack \
-          --query "Stacks[0].Outputs[?OutputKey=='JournalEventBucketName'].OutputValue" \
-          --output text)
-        echo "BUCKET_NAME=$BUCKET_NAME"
-        echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
+      # Retrieve the S3 Bucket name from CloudFormation Outputs
+      - name: Get S3 Bucket Name
+        id: get_bucket_name
+        run: |
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name davidgp-journal-event-s3 \
+            --query "Stacks[0].Outputs[?OutputKey=='JournalEventBucketName'].OutputValue" \
+            --output text)
+          echo "BUCKET_NAME=$BUCKET_NAME"
+          echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
 
-    - name: Debug Bucket Name
-      run: |
-        echo "Bucket Name is: ${{ env.BUCKET_NAME }}"
+  upload_lambda_files:
+    name: Upload Lambda Files to S3
+    runs-on: ubuntu-latest
+    needs: deploy_stack
 
-    - name: Create ZIP for Lambda 1
-      run: |
-        zip -j function1.zip get_data.py
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      BUCKET_NAME: ${{ needs.deploy_stack.outputs.BUCKET_NAME }}
 
-    # Paso para generar el zip para Lambda 2
-    - name: Create ZIP for Lambda 2
-      run: |
-        zip -j function2.zip insert_data_sf.py
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # Upload ZIP file to the S3 bucket
-    - name: Upload Lambda 1 to S3
-      run: |
-        aws s3 cp function1.zip s3://${BUCKET_NAME}/interceptor-lambda-code-bucket/function1.zip
+      # Create ZIP file for Lambda 1
+      - name: Create ZIP for Lambda 1
+        run: |
+          zip -j function1.zip get_data.py
 
-    - name: Upload Lambda 2 to S3
-      run: |
-        aws s3 cp function2.zip s3://${BUCKET_NAME}/connector-sf-lambda-code-bucket/function2.zip
+      # Create ZIP file for Lambda 2
+      - name: Create ZIP for Lambda 2
+        run: |
+          zip -j function2.zip insert_data_sf.py
+
+      # Upload ZIP file for Lambda 1 to the S3 bucket
+      - name: Upload Lambda 1 to S3
+        run: |
+          aws s3 cp function1.zip s3://${{ env.BUCKET_NAME }}/interceptor-lambda-code-bucket/function1.zip
+
+      # Upload ZIP file for Lambda 2 to the S3 bucket
+      - name: Upload Lambda 2 to S3
+        run: |
+          aws s3 cp function2.zip s3://${{ env.BUCKET_NAME }}/connector-sf-lambda-code-bucket/function2.zip
