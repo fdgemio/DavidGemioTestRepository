@@ -96,4 +96,16 @@ jobs:
       # Upload ZIP file for Lambda 2 to the S3 bucket
       - name: Upload Lambda 2 to S3
         run: |
-          aws s3 cp function2.zip s3://${{ env.BUCKET_NAME }}/connector-sf-lambda-code-bucket/function2.zip
+                  aws s3 cp function2.zip s3://${{ env.BUCKET_NAME }}/connector-sf-lambda-code-bucket/function2.zip
+
+  create_lambdas:
+    name: Create Lambdas Functions
+    runs-on: ubuntu-latest
+    needs: upload_lambda_files  # Ensures this job runs only after the deploy_stack job
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+
+    steps:

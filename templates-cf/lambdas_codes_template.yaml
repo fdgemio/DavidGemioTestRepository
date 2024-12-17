@@ -14,8 +14,20 @@ Resources:
       Runtime: python3.9
       Handler: interceptor_lambda.handler
       Code:
-        S3Bucket: !Ref CodeBucketName
-        S3Key: interceptor-lambda-code-bucket/first_lambda.zip
+        S3Bucket: !ImportValue JournalEventBucketNameExport  # Importa el nombre del bucket desde el primer stack
+        S3Key: interceptor-lambda-code-bucket/function1.zip
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 10
+
+  ConnectorSFLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: ConnectorSF
+      Runtime: python3.9
+      Handler: connector_sf_lambda.handler
+      Code:
+        S3Bucket: !ImportValue JournalEventBucketNameExport  # Importa el nombre del bucket desde el primer stack
+        S3Key: connector-sf-lambda-code-bucket/function2.zip
       Role: !GetAtt LambdaExecutionRole.Arn
       Timeout: 10
 

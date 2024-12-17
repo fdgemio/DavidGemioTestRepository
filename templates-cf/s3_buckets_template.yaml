@@ -11,3 +11,5 @@ Outputs:
   JournalEventBucketName:
     Description: S3 Bucket name for journal events
     Value: !Ref JournalEventBucket
+    Export:
+      Name: JournalEventBucketNameExport
