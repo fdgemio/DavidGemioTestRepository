@@ -41,7 +41,8 @@ jobs:
             --stack-name davidgp-journal-event-s3 \
             --capabilities CAPABILITY_NAMED_IAM
 
-      # Retrieve the S3 Bucket name from CloudFormation Outputs
+
+      # Retrieve the S3 Bucket name from CloudFormation Output.
       - name: Get S3 Bucket Name
         id: get_bucket_name
         run: |
