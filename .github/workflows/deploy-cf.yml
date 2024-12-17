@@ -62,7 +62,6 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_REGION: ${{ secrets.AWS_REGION }}
-      BUCKET_NAME: ${{ needs.deploy_stack.outputs.bucket_name }}  # Reference the output from the previous job
 
     steps:
       # Checkout the repository
@@ -78,6 +77,16 @@ jobs:
       - name: Create ZIP for Lambda 2
         run: |
           zip -j function2.zip insert_data_sf.py
+
+      - name: Get S3 Bucket Name
+        id: get_bucket_name
+        run: |
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name davidgp-journal-event-s3 \
+            --query "Stacks[0].Outputs[?OutputKey=='JournalEventBucketName'].OutputValue" \
+            --output text)
+          echo "BUCKET_NAME=$BUCKET_NAME"
+          echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
 
       # Upload ZIP file for Lambda 1 to the S3 bucket
       - name: Upload Lambda 1 to S3
