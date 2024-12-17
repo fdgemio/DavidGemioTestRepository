@@ -1,0 +1,42 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Stack to create Lambda functions
+
+Parameters:
+  CodeBucketName:
+    Type: String
+    Description: Name of the S3 bucket with Lambda code
+
+Resources:
+  InterceptorSNSLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: InterceptorSNSFunction
+      Runtime: python3.9
+      Handler: interceptor_lambda.handler
+      Code:
+        S3Bucket: !Ref CodeBucketName
+        S3Key: interceptor-lambda-code-bucket/first_lambda.zip
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 10
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaBasicExecution
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*

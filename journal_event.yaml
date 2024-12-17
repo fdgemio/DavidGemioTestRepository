@@ -1,0 +1,76 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+
+  # First S3 Bucket
+  LambdaCodeBucket1:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-lambda-bucket-1"
+
+  # Second S3 Bucket
+  LambdaCodeBucket2:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-lambda-bucket-2"
+
+  # First Lambda Function
+  LambdaFunction1:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-lambda-function-1"
+      Handler: index.handler  # Specify the handler function
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python3.9
+      Code:
+        S3Bucket: !Ref LambdaCodeBucket1
+        S3Key: function1.zip  # Specify the zip file in the S3 bucket
+
+  # Second Lambda Function
+  LambdaFunction2:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-lambda-function-2"
+      Handler: index.handler  # Specify the handler function
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python3.9
+      Code:
+        S3Bucket: !Ref LambdaCodeBucket2
+        S3Key: function2.zip  # Specify the zip file in the S3 bucket
+
+  # IAM Role for Lambda Functions
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-lambda-exec-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "arn:aws:logs:*:*:*"
+
+Outputs:
+  LambdaFunction1Arn:
+    Description: ARN of Lambda Function 1
+    Value: !GetAtt LambdaFunction1.Arn
+  LambdaFunction2Arn:
+    Description: ARN of Lambda Function 2
+    Value: !GetAtt LambdaFunction2.Arn
+  S3Bucket1Name:
+    Description: Name of S3 bucket 1
+    Value: !Ref LambdaCodeBucket1
+  S3Bucket2Name:
+    Description: Name of S3 bucket 2
+    Value: !Ref LambdaCodeBucket2
