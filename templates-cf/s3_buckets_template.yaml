@@ -8,6 +8,6 @@ Resources:
       BucketName: !Sub "journal-event-${AWS::AccountId}-${AWS::Region}"
 
 Outputs:
-  BucketName:
-    Description: Name of the S3 bucket
+  JournalEventBucketName:
+    Description: S3 Bucket name for journal events
     Value: !Ref JournalEventBucket
