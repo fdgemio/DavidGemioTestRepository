@@ -8,7 +8,7 @@ on:
 jobs:
   deploy_stack:
     name: Deploy CloudFormation Stack
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -55,7 +55,7 @@ jobs:
 
   upload_lambda_files:
     name: Upload Lambda Files to S3
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: deploy_stack  # Ensures this job runs only after the deploy_stack job
 
     env:
@@ -100,7 +100,7 @@ jobs:
 
   create_lambdas:
     name: Create Lambdas Functions
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: upload_lambda_files  # Ensures this job runs only after the deploy_stack job
 
     env:
