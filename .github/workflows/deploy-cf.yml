@@ -131,7 +131,7 @@ jobs:
         run: |
           aws cloudformation deploy \
             --template-file templates-cf/lambdas_codes_template.yaml \
-            --stack-name davidgp-journal-event-s3 \
+            --stack-name davidgp-journal-event-lambdas \
             --capabilities CAPABILITY_NAMED_IAM
 
       # Obtener el nombre del bucket S3 del stack desplegado
